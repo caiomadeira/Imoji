@@ -1,85 +1,59 @@
-"""
-API KEY: PCoVVp1nYFhYbBImiDg9sSMhI
-API KEY SECRET: iUFr4IDxupB6DDqkwP8wcReTysY7G8KYCPszi9S2BQtmAMgKE6
-
-ACESS TOKEN: 1317291421523726342-kc5u5yJjz92cKuIesRezMlAJpifl7K
-ACESS TOKEN SECRET: 5gUHmXtXYZC8yxc2QataiqcLhitVQzpVTb3ntC6yOyOKD
-
-
-status id with unicode clow: 1446951831737876490
-status id without any unicode: 1444946581891977218
-"""
-
-import PIL
-import tweepy
 import os
-import unicodedata
+from PIL import Image
+from imoji.entry import get_unicode, stringify
+from imoji.emojis.reference import path
 
-from PIL import Image, ImageDraw, ImageOps, ImageFilter
-from PIL import *
-
-consumer_key = "PCoVVp1nYFhYbBImiDg9sSMhI"
-consumer_secret = "iUFr4IDxupB6DDqkwP8wcReTysY7G8KYCPszi9S2BQtmAMgKE6"
-access_token = "1317291421523726342-kc5u5yJjz92cKuIesRezMlAJpifl7K"
-access_token_secret = "5gUHmXtXYZC8yxc2QataiqcLhitVQzpVTb3ntC6yOyOKD"
+RGBA = 'RGBA'
+REPO_NAME = path  # name of folder with all emoji files in png (default of library)
+ERRO_MESSAGE = "No unicode found in list"
 
 
-def get_text():
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_token, access_token_secret)
-    api = tweepy.API(auth)
+class Imoji:
+    """main class of library."""
 
-    id = 1446951831737876490
-    status = api.get_status(id)
-    text = status.text
-    print(text)
-    unic = text.encode("unicode_escape")
-    print(unic)
-    return unic
+    def __init__(self, text, debug=False):
+        self.encode = stringify(value=text, debug=debug)
+        self.unicodelist = get_unicode(value=self.encode, debug=debug)
+        self.__find = self.find(unicodelist=self.unicodelist, debug=debug)
 
+    def find(self, unicodelist: list, debug=False):
+        count = 0
+        if isinstance(unicodelist, list):
+            if debug:
+                print("Imoji [DEBUG INFO]: Emoji list", unicodelist)
+                pass
+            else:
+                pass
+            for root, dirs, files in os.walk(REPO_NAME):
+                for name in files:
+                    if debug:
+                        count += 1
+                        print(f"Emoji/PNG FILE [{count}]:", name)
+                        pass
+                    else:
+                        pass
+                    try:
+                        for u in unicodelist:
+                            emoji_file = u + ".png"
+                            if name == emoji_file:
+                                if debug:
+                                    print("Unicode returned sucessfully:", emoji_file)
+                                    pass
+                                else:
+                                    pass
+                                return emoji_file
+                    except TypeError:
+                        return ERRO_MESSAGE
 
-def get_unicode():
-    unicode_in_text = get_text()
-    emoji_list = []
-    if isinstance(unicode_in_text, str):
-        print("just string")
-    elif isinstance(unicode_in_text, bytes):
-        print("unicode data")
-        strlist = unicode_in_text.decode("utf-8").split()
-        # print(strlist)
-        for u in strlist:
-            if u.startswith('\\U'):
-                print("Unicode founded:", u)
-                if "\\U000" in u:
-                    rm_prefix = u.replace("\\U000", "")
-                    print("Unicode trated:", u)
-                    emoji_list.append(rm_prefix)
-                    return emoji_list
-
-
-def search_for_emoji():
-    unicode_list = get_unicode()
-    print("Search unicode:", unicode_list)
-    for root, dirs, files in os.walk("emojis"):
-        for name in files:
-            # print(name)
-            try:
-                for u in unicode_list:
-                    unicode_img = u + ".png"
-                    if name == unicode_img:
-                        # print("yes")
-                        print("Unicode returned sucessfully:", unicode_img)
-                        return unicode_img
-            except TypeError:
-                return "No unicode found in list"
-
-
-def unicode_action():
-    status = search_for_emoji()
-
-    if "No unicode found in list" in status:
-        print("Fuck.")
-        quit()
-    else:
-        img = Image.open(f'imoji/emojis/{status}').convert('RGBA')
+    def drawUnicode(self, debug=False):
+        img = Image.open(REPO_NAME + "/" + self.__find).convert(RGBA)
+        if debug:
+            print("Emoji object:", img)
+            pass
+        else:
+            pass
         return img
+
+    def pasteUnicode(self, emoji_im, foreground, posX, posY):
+        pasted = foreground.paste(emoji_im, (posX, posY), emoji_im)
+        return pasted
